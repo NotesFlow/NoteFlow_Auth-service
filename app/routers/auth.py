@@ -6,8 +6,7 @@ from app.core.security import (
     get_password_hash,
     verify_password,
 )
-from app.dependencies.auth import get_current_user
-from app.db.session import SessionLocal
+from app.dependencies.auth import get_current_user, get_db
 from app.models.user import User
 from app.schemas.auth import (
     LoginRequest,
@@ -21,59 +20,49 @@ router = APIRouter(tags=["auth"])
 
 
 @router.post("/register", response_model=RegisterResponse, status_code=status.HTTP_201_CREATED)
-def register(payload: RegisterRequest):
-    db: Session = SessionLocal()
+def register(payload: RegisterRequest, db: Session = Depends(get_db)):
+    existing_user = (
+        db.query(User)
+        .filter((User.username == payload.username) | (User.email == payload.email))
+        .first()
+    )
 
-    try:
-        existing_user = (
-            db.query(User)
-            .filter((User.username == payload.username) | (User.email == payload.email))
-            .first()
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username or email already exists",
         )
 
-        if existing_user:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Username or email already exists",
-            )
+    user = User(
+        username=payload.username,
+        email=payload.email,
+        password_hash=get_password_hash(payload.password),
+    )
 
-        user = User(
-            username=payload.username,
-            email=payload.email,
-            password_hash=get_password_hash(payload.password),
-        )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
 
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-
-        return RegisterResponse(
-            id=user.id,
-            username=user.username,
-            email=user.email,
-        )
-    finally:
-        db.close()
+    return RegisterResponse(
+        id=user.id,
+        username=user.username,
+        email=user.email,
+    )
 
 
 @router.post("/login", response_model=TokenResponse)
-def login(payload: LoginRequest):
-    db: Session = SessionLocal()
+def login(payload: LoginRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.username == payload.username).first()
 
-    try:
-        user = db.query(User).filter(User.username == payload.username).first()
+    if not user or not verify_password(payload.password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid username or password",
+        )
 
-        if not user or not verify_password(payload.password, user.password_hash):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid username or password",
-            )
+    access_token = create_access_token(subject=user.username)
 
-        access_token = create_access_token(subject=user.username)
-
-        return TokenResponse(access_token=access_token)
-    finally:
-        db.close()
+    return TokenResponse(access_token=access_token)
 
 
 @router.get("/me", response_model=MeResponse)
