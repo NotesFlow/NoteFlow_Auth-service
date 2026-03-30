@@ -12,6 +12,10 @@ class Settings:
     DATABASE_USER: str = os.getenv("DATABASE_USER", "noteflow_user")
     DATABASE_PASSWORD: str = os.getenv("DATABASE_PASSWORD", "noteflow_pass")
 
+    JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "change_this_in_real_env")
+    JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+
     @property
     def DATABASE_URL(self) -> str:
         return (
