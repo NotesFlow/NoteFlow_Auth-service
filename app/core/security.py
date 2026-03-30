@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
 import jwt
+from jwt import ExpiredSignatureError, InvalidTokenError
 from pwdlib import PasswordHash
 
 from app.core.config import settings
@@ -31,3 +32,23 @@ def create_access_token(subject: str) -> str:
         settings.JWT_SECRET_KEY,
         algorithm=settings.JWT_ALGORITHM,
     )
+
+
+def decode_access_token(token: str) -> str:
+    try:
+        payload = jwt.decode(
+            token,
+            settings.JWT_SECRET_KEY,
+            algorithms=[settings.JWT_ALGORITHM],
+        )
+    except ExpiredSignatureError:
+        raise ValueError("Token expired")
+    except InvalidTokenError:
+        raise ValueError("Invalid token")
+
+    subject = payload.get("sub")
+
+    if not subject:
+        raise ValueError("Invalid token payload")
+
+    return str(subject)
