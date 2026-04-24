@@ -1,14 +1,37 @@
 # NoteFlow Auth Service
 
-Microserviciul de autentificare pentru proiectul **NoteFlow**.
+`NoteFlow Auth Service` is the authentication microservice for the `NoteFlow` project.
 
-Acest serviciu gestionează:
-- înregistrarea utilizatorilor
-- autentificarea utilizatorilor
-- generarea de token-uri JWT
-- validarea utilizatorului curent autentificat
+Its responsibility is to manage user registration, login, password hashing, JWT token generation, and authenticated user validation.
 
-## Funcționalități implementate
+This service is part of a larger microservices architecture that includes:
+
+- `auth-service`
+- `notes-service`
+- `notes-data-service`
+- `postgres`
+- infrastructure components managed in the dedicated infrastructure repository
+
+## Responsibilities
+
+This service is responsible for:
+
+- registering users
+- validating user credentials
+- hashing passwords securely
+- issuing JWT access tokens
+- returning the currently authenticated user
+
+This service is not responsible for:
+
+- note management
+- note persistence
+- API gateway logic
+- monitoring and infrastructure concerns
+
+## Implemented Features
+
+The current MVP includes:
 
 - `POST /register`
 - `POST /login`
@@ -16,17 +39,18 @@ Acest serviciu gestionează:
 - `GET /health`
 - `GET /health/db`
 
-## Tehnologii folosite
+## Tech Stack
 
 - Python 3.10
 - FastAPI
 - SQLAlchemy
 - PostgreSQL
 - PyJWT
-- pwdlib cu Argon2
+- pwdlib with Argon2
 - Docker
+- pytest
 
-## Structura proiectului
+## Project Structure
 
 ```text
 app/
@@ -49,13 +73,21 @@ app/
 │   ├── __init__.py
 │   └── auth.py
 └── main.py
+
+tests/
+├── conftest.py
+└── test_auth.py
+
+Dockerfile
+requirements.txt
+.env.example
 ```
 
-## Variabile de mediu
+## Environment Variables
 
-Creează un fișier `.env` pornind de la `.env.example`.
+Create a local `.env` file based on `.env.example`.
 
-Exemplu:
+Example:
 
 ```env
 AUTH_SERVICE_PORT=8001
@@ -74,37 +106,66 @@ JWT_ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 ```
 
-## Instalare locală
+## Configuration Notes
 
-### 1. Creează și activează mediul virtual
+- For local development from Linux or WSL, use `DATABASE_HOST=127.0.0.1`.
+- Do not use `host.docker.internal` as the default local host unless your runtime environment specifically requires it.
+- The service loads variables from the local `.env` file automatically.
+- The service creates the `users` table on startup if it does not already exist.
 
-Pe Linux / WSL:
+## User Model
+
+The service currently manages the `users` table with the following fields:
+
+- `id`
+- `username`
+- `email`
+- `password_hash`
+- `created_at`
+
+## Local Development
+
+### 1. Create and activate a virtual environment
+
+Linux / WSL:
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-Pe Windows PowerShell:
+Windows PowerShell:
 
 ```powershell
 python -m venv .venv
 .venv\Scripts\Activate.ps1
 ```
 
-### 2. Instalează dependențele
+### 2. Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Pornește serviciul
+### 3. Start PostgreSQL
+
+If you use the infrastructure repository:
 
 ```bash
+cd ../NoteFlow_Infrastructure
+docker compose -f docker-compose.dev.yml up -d
+```
+
+Make sure the PostgreSQL values from the infrastructure repository match the values in this service's `.env`.
+
+### 4. Run the service
+
+```bash
+cd ../NoteFlow_Auth-service
 uvicorn app.main:app --reload --port 8001
 ```
 
-Serviciul va fi disponibil la:
+The service will be available at:
 
 ```text
 http://127.0.0.1:8001
@@ -116,25 +177,107 @@ Swagger UI:
 http://127.0.0.1:8001/docs
 ```
 
-## Pornirea bazei de date
+## Docker
 
-Serviciul are nevoie de PostgreSQL pornit.
-
-Dacă folosești repository-ul de infrastructură:
+Build the image:
 
 ```bash
-docker compose -f docker-compose.dev.yml up -d
+docker build -t noteflow-auth-service .
 ```
 
-Asigură-te că valorile din `.env` corespund cu cele folosite de PostgreSQL.
+Run the container:
 
-## Endpoint-uri
+```bash
+docker run --rm -p 8001:8001 --env-file .env noteflow-auth-service
+```
+
+Note:
+
+- if the service runs inside Docker and PostgreSQL runs outside Docker, then `DATABASE_HOST` may need to be adjusted for that setup
+- if both services run in Docker Compose, use the PostgreSQL service name as host
+
+## Automated Tests
+
+Run the test suite with:
+
+```bash
+pytest
+```
+
+The current tests focus on the main authentication flow:
+
+- register
+- login
+- authenticated `/me`
+- duplicate registration rejection
+- invalid login rejection
+- invalid token rejection
+
+## Manual Testing
+
+You can test the service in Swagger or with `curl`.
+
+### Swagger
+
+Open:
+
+```text
+http://127.0.0.1:8001/docs
+```
+
+Recommended order:
+
+1. `GET /health`
+2. `GET /health/db`
+3. `POST /register`
+4. `POST /login`
+5. `Authorize` with the returned bearer token
+6. `GET /me`
+
+### curl
+
+Health check:
+
+```bash
+curl http://127.0.0.1:8001/health
+```
+
+Database health check:
+
+```bash
+curl http://127.0.0.1:8001/health/db
+```
+
+Register:
+
+```bash
+curl -X POST http://127.0.0.1:8001/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"albert_test","email":"albert_test@example.com","password":"parola123"}'
+```
+
+Login:
+
+```bash
+curl -X POST http://127.0.0.1:8001/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"albert_test","password":"parola123"}'
+```
+
+Authenticated user:
+
+```bash
+curl http://127.0.0.1:8001/me \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
+
+## API Endpoints
 
 ### `GET /health`
 
-Verifică dacă serviciul rulează.
+Checks whether the service is running.
 
-Răspuns exemplu:
+Example response:
 
 ```json
 {
@@ -146,9 +289,9 @@ Răspuns exemplu:
 
 ### `GET /health/db`
 
-Verifică dacă serviciul se poate conecta la baza de date.
+Checks whether the service can connect to PostgreSQL.
 
-Răspuns exemplu:
+Example response:
 
 ```json
 {
@@ -159,9 +302,9 @@ Răspuns exemplu:
 
 ### `POST /register`
 
-Creează un utilizator nou.
+Creates a new user.
 
-Body exemplu:
+Request body:
 
 ```json
 {
@@ -171,7 +314,7 @@ Body exemplu:
 }
 ```
 
-Răspuns exemplu:
+Successful response:
 
 ```json
 {
@@ -181,11 +324,19 @@ Răspuns exemplu:
 }
 ```
 
+Validation rules:
+
+- `username` is required
+- `username` length must be between 3 and 50 characters
+- `email` must be valid
+- `password` length must be between 6 and 100 characters
+- username and email must be unique
+
 ### `POST /login`
 
-Autentifică utilizatorul și returnează un token JWT.
+Authenticates a user and returns a JWT access token.
 
-Body exemplu:
+Request body:
 
 ```json
 {
@@ -194,7 +345,7 @@ Body exemplu:
 }
 ```
 
-Răspuns exemplu:
+Successful response:
 
 ```json
 {
@@ -205,84 +356,58 @@ Răspuns exemplu:
 
 ### `GET /me`
 
-Returnează utilizatorul autentificat curent.
+Returns the current authenticated user.
 
-Header necesar:
+Required header:
 
 ```text
 Authorization: Bearer <access_token>
 ```
 
-Răspuns exemplu:
+Successful response:
 
 ```json
 {
   "id": 1,
   "username": "albert",
   "email": "albert@example.com",
-  "created_at": "2026-03-31T12:00:00"
+  "created_at": "2026-04-24T06:30:45.502685Z"
 }
 ```
 
-## Testare rapidă
+## Error Cases
 
-### 1. Register
+Typical error responses include:
 
-```bash
-curl -X POST "http://127.0.0.1:8001/register" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "username": "albert",
-    "email": "albert@example.com",
-    "password": "parola123"
-  }'
-```
+- `400 Bad Request`
+  - duplicate username or email during registration
+- `401 Unauthorized`
+  - invalid username or password
+  - invalid token
+  - missing authorization token
+- `422 Unprocessable Entity`
+  - invalid request body
 
-### 2. Login
+## Security Notes
 
-```bash
-curl -X POST "http://127.0.0.1:8001/login" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "username": "albert",
-    "password": "parola123"
-  }'
-```
+- Passwords are stored as hashes, never in plain text.
+- JWT tokens are signed using the configured secret key.
+- Use a strong `JWT_SECRET_KEY` outside development.
+- Do not commit real secrets to the repository.
 
-### 3. Get current user
+## Current Status
 
-```bash
-curl -X GET "http://127.0.0.1:8001/me" \
-  -H "Authorization: Bearer TOKENUL_TAU"
-```
+The service is currently suitable for the authentication part of the MVP and has been manually verified for:
 
-## Rulare cu Docker
-
-### Build imagine
-
-```bash
-docker build -t noteflow-auth-service .
-```
-
-### Rulare container
-
-```bash
-docker run --rm -p 8001:8001 --env-file .env noteflow-auth-service
-```
-
-## Observații
-
-- parola este stocată hash-uită, nu în clar
-- autentificarea se face cu JWT
-- tabela `users` este creată automat la pornirea aplicației
-- pentru producție, `JWT_SECRET_KEY` trebuie schimbat cu o valoare sigură și lungă
-- pentru moment, serviciul este gândit ca MVP pentru proiectul NoteFlow
-
-## Status curent
-
-Acest serviciu acoperă MVP-ul pentru autentificare:
-- înregistrare utilizator
+- registration
 - login
-- identificare utilizator curent
+- bearer token authentication
+- authenticated user retrieval
+- database connectivity
 
-Pașii următori, în afara acestui repo, sunt integrarea în `docker-compose`, conectarea prin gateway și folosirea lui de către celelalte microservicii.
+## Next Integration Point
+
+This service is expected to be consumed later by:
+
+- `notes-service`, for authenticated access control
+- `kong`, as the public gateway route for `/auth`

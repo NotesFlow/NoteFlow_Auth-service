@@ -1,10 +1,17 @@
 import os
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+
+load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
 
 class Settings:
     APP_NAME: str = os.getenv("APP_NAME", "NoteFlow Auth Service")
     APP_VERSION: str = os.getenv("APP_VERSION", "0.1.0")
     DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
+    AUTH_SERVICE_PORT: int = int(os.getenv("AUTH_SERVICE_PORT", "8001"))
 
     DATABASE_HOST: str = os.getenv("DATABASE_HOST", "127.0.0.1")
     DATABASE_PORT: str = os.getenv("DATABASE_PORT", "5433")
