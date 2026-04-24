@@ -215,8 +215,6 @@ The current tests focus on the main authentication flow:
 
 ## Manual Testing
 
-You can test the service in Swagger or with `curl`.
-
 ### Swagger
 
 Open:
@@ -233,43 +231,6 @@ Recommended order:
 4. `POST /login`
 5. `Authorize` with the returned bearer token
 6. `GET /me`
-
-### curl
-
-Health check:
-
-```bash
-curl http://127.0.0.1:8001/health
-```
-
-Database health check:
-
-```bash
-curl http://127.0.0.1:8001/health/db
-```
-
-Register:
-
-```bash
-curl -X POST http://127.0.0.1:8001/register \
-  -H "Content-Type: application/json" \
-  -d '{"username":"albert_test","email":"albert_test@example.com","password":"parola123"}'
-```
-
-Login:
-
-```bash
-curl -X POST http://127.0.0.1:8001/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"albert_test","password":"parola123"}'
-```
-
-Authenticated user:
-
-```bash
-curl http://127.0.0.1:8001/me \
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
-```
 
 ## API Endpoints
 
