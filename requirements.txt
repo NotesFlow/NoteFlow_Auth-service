@@ -5,6 +5,4 @@ psycopg2-binary
 pwdlib[argon2]
 email-validator
 PyJWT
-httpx
-pytest
 python-dotenv

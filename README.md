@@ -80,6 +80,7 @@ tests/
 
 Dockerfile
 requirements.txt
+requirements-dev.txt
 .env.example
 ```
 
@@ -147,6 +148,12 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
+For local test execution:
+
+```bash
+pip install -r requirements-dev.txt
+```
+
 ### 3. Start PostgreSQL
 
 If you use the infrastructure repository:
@@ -201,6 +208,7 @@ Note:
 Run the test suite with:
 
 ```bash
+pip install -r requirements-dev.txt
 pytest
 ```
 
