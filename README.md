@@ -38,6 +38,7 @@ The current MVP includes:
 - `GET /me`
 - `GET /health`
 - `GET /health/db`
+- `GET /metrics`
 
 ## Tech Stack
 
@@ -48,6 +49,7 @@ The current MVP includes:
 - PyJWT
 - pwdlib with Argon2
 - Docker
+- Prometheus metrics
 - pytest
 
 ## Project Structure
@@ -182,6 +184,12 @@ Swagger UI:
 
 ```text
 http://127.0.0.1:8001/docs
+```
+
+Prometheus metrics:
+
+```text
+http://127.0.0.1:8001/metrics
 ```
 
 ## Docker
