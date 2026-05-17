@@ -211,6 +211,28 @@ Note:
 - if the service runs inside Docker and PostgreSQL runs outside Docker, then `DATABASE_HOST` may need to be adjusted for that setup
 - if both services run in Docker Compose, use the PostgreSQL service name as host
 
+## CI/CD
+
+GitHub Actions workflow:
+
+- [.github/workflows/docker-image.yml](.github/workflows/docker-image.yml)
+
+The workflow runs tests, builds the Docker image, and publishes it to Docker Hub on pushes to `main`.
+
+Docker Hub image:
+
+- `albertart10/noteflow-auth-service`
+
+Published tags:
+
+- `latest`
+- `sha-<commit-sha>`
+
+Required GitHub Actions secrets:
+
+- `DOCKERHUB_USERNAME`
+- `DOCKERHUB_TOKEN`
+
 ## Automated Tests
 
 Run the test suite with:
