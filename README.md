@@ -10,7 +10,12 @@ This service is part of a larger microservices architecture that includes:
 - `notes-service`
 - `notes-data-service`
 - `postgres`
-- infrastructure components managed in the dedicated infrastructure repository
+- `adminer`
+- `kong`
+- `prometheus`
+- `grafana`
+- `portainer`
+- Docker Compose, Docker Swarm, and CI/CD managed from the infrastructure layer
 
 ## Responsibilities
 
@@ -396,17 +401,23 @@ Typical error responses include:
 
 ## Current Status
 
-The service is currently suitable for the authentication part of the MVP and has been manually verified for:
+The service is complete for the authentication part of the MVP and has been verified for:
 
 - registration
 - login
 - bearer token authentication
 - authenticated user retrieval
 - database connectivity
+- Prometheus metrics
+- Docker image build and publication through GitHub Actions
+- Swarm deployment through the infrastructure repository
 
-## Next Integration Point
+## Final Integration
 
-This service is expected to be consumed later by:
+In the final NoteFlow stack:
 
-- `notes-service`, for authenticated access control
-- `kong`, as the public gateway route for `/auth`
+- `kong` exposes this service publicly under `/auth`
+- `notes-service` calls `GET /me` to validate bearer tokens
+- `postgres` stores the `users` table
+- `prometheus` scrapes `/metrics`
+- Docker Swarm runs the published Docker Hub image `albertart10/noteflow-auth-service:latest`
